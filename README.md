@@ -33,11 +33,10 @@
 7. [Runtime Behavior & Modes](#runtime-behavior--modes)
 
    * [1. Kill Switch (Physical & Remote)](#1-kill-switch-physical--remote)
-   * [2. Line-Following (Section 1)](#2-line%E2%80%91following-section-1)
-   * [3. Wall-Following (Section 2)](#3-wall%E2%80%91following-section-2)
-   * [4. Section 3 & Attachments](#4-section-3--attachments)
-   * [5. Pit/Ziplines (Section 4)](#5-pitziplines-section-4)
-   * [6. Debugging & Print Flags](#6-debugging--print-flags)
+   * [2. Line-Following (Section 1)](#2-section-1)
+   * [3. Wall-Following (Section 2)](#3-section-2)
+   * [4. More Line-Following with Pits and Ziplines (Section 3)](#4-section-3)
+   * [5. Debugging & Print Flags](#5-debugging--print-flags)
 8. [Using `parameter_tune_and_kill.py`](#using-parameter_tune_and_killpy)
 
    * [Step 1: Edit `UDP_IP` & `UDP_PORT`](#step-1-edit-udp_ip--udp_port)
@@ -345,7 +344,7 @@ Modify any pins here if your hardware uses different pins.
   • You can change wall-following PID via UDP `"WALL_PID,<P>,<I>,<D>,<A>"` (where `<A>` = wall-alignment factor).
   • You can adjust `turnDuration` via `"TURN_DURATION,<milliseconds>"`.
 
-### 4. Section 3 & Attachments
+### 4. More Line-Following with Pits and Ziplines (Section 3)
 
 •⁠  ⁠Once ⁠ distL1 > 20 cm ⁠ *and* ⁠ lostLineCounter == 3 ⁠, this indicates the robot has cleared the wall section and come up a ramp.
   • On that frame:
