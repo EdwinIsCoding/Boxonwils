@@ -1,5 +1,5 @@
-**Boxonwils Robotics Challenge – README**
-*(A complete how-to guide for using the Arduino and Python scripts with your robot)*
+**Boxonwils - Year 1, Term 3 Robotics Challenge – README**
+*(A complete how-to guide for using the Arduino and Python scripts with the robot)*
 
 ---
 
@@ -51,7 +51,7 @@
 
 ## Introduction
 
-Welcome to the **Boxonwils Robotics Challenge** project! This repository contains all the code needed to run an Arduino Giga–based robot capable of line-following, wall-following, and completing challenge tasks in a modular “section” format. The core firmware (`boxonwils.ino`) handles sensor reading, PID loops, motor control, and “section logic.” A companion Python script (`parameter_tune_and_kill.py`) allows remote adjustments of PID constants, speed, thresholds, and even a remote kill switch over UDP.
+Welcome to the **Boxonwils Robotics Challenge** project! This repository contains all the code needed to run an Arduino Giga–based robot capable of line-following, wall-following, and completing challenge tasks in a modular “section” format. The core firmware (`boxonwils.ino`) handles sensor readings, PID loops, motor control, and “section logic.” A companion Python script (`parameter_tune_and_kill.py`) allows remote adjustments of PID constants, speed, thresholds, and even a remote kill switch over UDP.
 
 This README will guide you—step by step—through wiring, configuration, building, uploading, and running everything. The system is mostly plug-and-play; the only adjustments you typically need to make are ensuring I²C motor-driver addresses align with your hardware and that your Wi-Fi credentials match.
 
@@ -60,11 +60,11 @@ This README will guide you—step by step—through wiring, configuration, build
 ## Hardware Overview
 
 1. **Arduino Giga (ESP32-based)** – runs the main `boxonwils.ino` firmware.
-2. **Two Motoron I²C Motor Controllers (e.g., Motoron 24v15)** – drive four brushed DC motors in pairs (front pair on one controller, rear pair on the other).
+2. **Two Motoron I²C Motor Controllers (e.g., Motoron 24v15)** – drive four DC motors in pairs (front pair on one controller, rear pair on the other).
 3. **Line-Reflectance Sensor Array (11 sensors)** – used for line detection (e.g., QTR-X reflectance array).
 4. **Ultrasonic (Sonar) Sensors (HC-SR04 style)** – three directions: two on the left, one front, one right.
 5. **Three Hobby Servos** – to manipulate a front claw, a back claw, and an L-bracket for attaching to tasks.
-6. **Photoresistor (Light Sensor)** – to detect ambient light (optional for advanced modes, not used heavily by default logic).
+6. **Photoresistor (Light Sensor)** – to detect ambient light (optional for advanced modes, not used by default logic).
 7. **Physical Kill Switch (Pushbutton)** – wired to pin 10 on Arduino for manual “stop”/“start.”
 8. **Wi-Fi Network** – used for remote UDP commands (tuning or remote kill).
 
@@ -76,10 +76,9 @@ This README will guide you—step by step—through wiring, configuration, build
   • Handles setup of I²C motor controllers, sensor inputs, servos, and Wi-Fi.
   • Implements multiple PID routines: line-following (11 reflectance sensors) and wall-following (left-side sonars, alignment).
   • Divides the course into sequential “sections” identified by `lostLineCounter`:
-  – Section 1: line segment with two 90° bends (line excluded at ends triggers logic)
+  – Section 1: line segment with 90° bend (line excluded at ends triggers logic)
   – Section 2: left-wall navigation using two left sonars, plus a fixed 90° turn when front obstacle is too close
-  – Section 3: line present but need to deploy/retract bracket/claws at specific times
-  – Section 4: pit or zipline, where both front+back claws deploy and full-speed dash is executed
+  – Section 3: line present but need to deploy/retract bracket/claws at specific times to go over a pit and down a zipline at full-speed
   • Responds to UDP commands for: Stop, LINE_PID, WALL_PID, BASE_SPEED, TURN_DURATION, LINE_THRESHOLD, TOGGLE_PRINT_FLAGS.
 * **`parameter_tune_and_kill.py` (Python 3 Script)**
   • Opens a UDP socket to send commands to the Arduino (same port `55500`).
@@ -122,15 +121,15 @@ This README will guide you—step by step—through wiring, configuration, build
 
 ## Wiring & Connections
 
-> **Tip:** Label each connector clearly, especially the I²C addresses or DIP switches on the Motoron boards, so you know which controller is front vs. back.
->
+> **Tip:** Label each connector clearly, especially the I²C addresses on the Motoron boards, so you know which controller is front vs. back.
+
 > **Warning:** Double-check you do not exceed 5 V on any servo or sensor pins. All signal lines are 5 V, but the Arduino Giga’s I/O is 3.3 V–tolerant. Servos usually work at 5 V logic.
 
 ### Motoron I²C Controllers
 
 * **MC1 (Front Motors)** – I²C address `0x10` by default
   • Connect to Arduino **SCL1** and **SDA1** (these map to `Wire1` on Arduino Giga).
-  • Power: 12 V–24 V supply shared by four motors (common ground with Arduino).
+  • Power: 10.9-12 V supply shared by four motors (common ground with Arduino).
   • Motors: Channel 1 = Front left, Channel 3 = Front right.
 * **MC2 (Back Motors)** – I²C address `0x11` by default
   • Also connect to the same `Wire1` bus—only one pair of SCL1/SDA1 lines, but each Motoron has a unique I²C address.
@@ -314,7 +313,7 @@ Modify any pins here if your hardware uses different pins.
   • Change via UDP: `"LINE_PID,<Kp>,<Ki>,<Kd>"`.
 * **Base Speed**: `baseSpeed = 600` (range 0–800).
   • Adjust via UDP: `"BASE_SPEED,<0–800>"`.
-* **Behavior**:
+* **Behaviour**:
   • In every `loop()`, if `lostLineCounter < 2`, it calls `followLine()`.
   • Inside `followLine()`:
   – Reads sensors, computes “line error” via weighted sum of reflectance times.
@@ -347,29 +346,33 @@ Modify any pins here if your hardware uses different pins.
 
 ### 4. Section 3 & Attachments
 
-* Once `distL1 > 20 cm` **and** `lostLineCounter == 3`, this indicates the robot has cleared the wall section and come up a ramp.
+•⁠  ⁠Once ⁠ distL1 > 20 cm ⁠ *and* ⁠ lostLineCounter == 3 ⁠, this indicates the robot has cleared the wall section and come up a ramp.
   • On that frame:
-  – `deployClaw_Bracket(bracketF, bracket)` moves the L-bracket into position.
-  – Short delay (400 ms).
-  – `lostLineCounter` increments to 4 so you don’t re-enter.
-* Subsequent `loop()` calls (with `lostLineCounter >= 4` but < 7) resume line-following.
-  • As the robot follows the line on Section 3, `lostLineCounter` eventually reaches 7 or 8 once it reaches the end line or intersection before the pit/zipline.
+  – ⁠ deployClaw_Bracket(bracketF, bracket) ⁠ moves the L-bracket into position.  
+  – Short delay (400 ms).  
+  – ⁠ lostLineCounter ⁠ increments to 4 so you don’t re-enter this branch.
 
-### 5. Pit/Ziplines (Section 4)
+•⁠  ⁠Subsequent ⁠ loop() ⁠ calls (with ⁠ lostLineCounter >= 4 ⁠ but ⁠ < 7 ⁠) resume line-following.
+  • As the robot follows the line on Section 3, ⁠ lostLineCounter ⁠ eventually reaches 7 or 8 once it reaches the end line or intersection before the pit/zipline.
 
-* Condition: `lostLineCounter == 7` **OR** `lostLineCounter == 8 && allSensorsOn()` (i.e., black line across the track).
+•⁠  ⁠*Pit/Ziplines Logic*
+  * Condition:  
+    - ⁠ lostLineCounter == 7 ⁠ *OR*  
+    - ⁠ lostLineCounter == 8 && allSensorsOn() ⁠  
+    (i.e., a solid black line across the track indicates the pit/zipline entry).
+
   • On that pass:
+  1. ⁠ deployClaw_Bracket(frontF, front) ⁠ → drops front claw (400 ms delay).  
+  2. ⁠ deployClaw_Bracket(backF, back) ⁠ → drops back claw (400 ms delay).  
+  3. ⁠ fullSend() ⁠ (sets all motors to ⁠ maxSpeed = 800 ⁠) → dash across pit or descend zipline.  
+  4. ⁠ delay(3000) ⁠ to allow crossing (3 seconds).  
+  5. Retract claws:  
+     – ⁠ retractClaw_Bracket(frontS, front) ⁠ (400 ms delay).  
+     – ⁠ retractClaw_Bracket(backS, back) ⁠ (400 ms delay).  
+  6. ⁠ stopMotors() ⁠ → halts (200 ms delay).  
+  7. ⁠ lostLineCounter++ ⁠ → set to 8 or 9, avoiding re-entry.
 
-  1. `deployClaw_Bracket(frontF, front)` → drops front claw (400 ms delay).
-  2. `deployClaw_Bracket(backF, back)` → drops back claw (400 ms delay).
-  3. `fullSend()` (sets all motors to `maxSpeed = 800`) → dash across pit or descend zipline.
-  4. `delay(3000)` to allow crossing (3 seconds).
-  5. Retract claws:
-     – `retractClaw_Bracket(frontS, front)` (400 ms delay).
-     – `retractClaw_Bracket(backS, back)` (400 ms delay).
-  6. `stopMotors()` → halts (200 ms delay).
-  7. `lostLineCounter++` → set to 8 or 9, avoiding re-entry.
-* After this, if `lostLineCounter >= 9`, the robot simply stops (`stopMotors()`), having completed all four sections.
+•⁠  ⁠After this, if ⁠ lostLineCounter >= 9 ⁠, the robot simply stops (⁠ stopMotors() ⁠), having completed all three sections.
 
 ### 6. Debugging & Print Flags
 
@@ -560,4 +563,4 @@ Mode 3: Base speed set to 250, Line-Following PID set to P=10, I=0, D=0
 * **Motoron Library** by Pololu – follows its own license (BSD-style).
 * **ESP32 Arduino Core** by Espressif Systems – follows Apache 2.0.
 * **Servo Library** – included with Arduino IDE; MIT license.
-* **Thanks** to the [Arduino Giga](https://store.arduino.cc/arduino-giga) development board and the challenge organizers for hardware and inspiration.
+* **Thanks** to Dr. Igor Gaponov, Olliver Collier, Alexandros Charitonidis, Dr. Daniel Tozadore, Dr. Yunda Yan, Dr. Pian Yu for the organisation of this Term 3 Robotics Challenge.
